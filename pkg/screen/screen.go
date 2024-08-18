@@ -20,13 +20,20 @@ const (
 	HEIGHT string = "height"
 	START  string = "start"
 	END    string = "end"
+	LEFT   string = "left"
+	BOTTOM string = "bottom"
+	TOP    string = "top"
 )
 
 var FILENAME []rune
 var FILEDATA []string
-var PADDING int = 3
+var PADDING = map[string]int{
+	LEFT:   3,
+	BOTTOM: 2,
+	TOP:    2,
+}
 var Cursor = map[string]int{
-	X: PADDING,
+	X: PADDING[LEFT],
 	Y: 1,
 }
 var Dimensions = map[string]int{
@@ -35,7 +42,7 @@ var Dimensions = map[string]int{
 }
 var ViewLine = map[string]int{
 	START: 0,
-	END:   0,
+	END:   Dimensions[HEIGHT] - 2,
 }
 
 func CreateScreen() (*Screen, error) {
@@ -65,6 +72,7 @@ func (s *Screen) Input() {
 		s.RenderFileName()
 		s.RenderCursor()
 		s.RenderFileData()
+		s.RenderCommandBox()
 		s.Screen.Show()
 		var event = s.Screen.PollEvent()
 
@@ -76,26 +84,26 @@ func (s *Screen) Input() {
 				return
 			} else if event.Key() == tcell.KeyLeft {
 
-				if Cursor[X] <= PADDING && Cursor[Y] > 1 {
+				if Cursor[X] <= PADDING[LEFT] && Cursor[Y] > PADDING[TOP] {
 					Cursor[Y] -= 1
 					if len(FILEDATA[Cursor[Y]-1]) == 0 {
-						Cursor[X] = PADDING
+						Cursor[X] = PADDING[LEFT]
 					} else {
-						Cursor[X] = len(FILEDATA[Cursor[Y]-1]) + PADDING + 1
+						Cursor[X] = len(FILEDATA[Cursor[Y]-1]) + PADDING[LEFT] + 1
 					}
 				}
-				if Cursor[X] > PADDING {
+				if Cursor[X] > PADDING[LEFT] {
 					Cursor[X] = Cursor[X] - 1
 				}
 
 			} else if event.Key() == tcell.KeyRight {
 
-				if Cursor[X] >= len(FILEDATA[Cursor[Y]-1])+PADDING {
+				if Cursor[X] >= len(FILEDATA[Cursor[Y]-1])+PADDING[LEFT] {
 					if Cursor[Y] >= len(FILEDATA) {
 						continue
 					}
 					Cursor[Y] += 1
-					Cursor[X] = PADDING
+					Cursor[X] = PADDING[LEFT]
 					continue
 				}
 				Cursor[X] = Cursor[X] + 1
@@ -104,14 +112,18 @@ func (s *Screen) Input() {
 
 				Cursor[Y] = Cursor[Y] - 1
 				if Cursor[X] > len(FILEDATA[Cursor[Y]-1]) {
-					Cursor[X] = len(FILEDATA[Cursor[Y]-1]) + PADDING
+					Cursor[X] = len(FILEDATA[Cursor[Y]-1]) + PADDING[LEFT]
 				}
 
-			} else if event.Key() == tcell.KeyDown && Cursor[Y] < len(FILEDATA) {
+			} else if event.Key() == tcell.KeyDown {
+
+				if Cursor[Y] >= len(FILEDATA) {
+					continue
+				}
 
 				if Cursor[X] >= len(FILEDATA[Cursor[Y]])+1 {
 					if len(FILEDATA[Cursor[Y]]) == 0 {
-						Cursor[X] = PADDING
+						Cursor[X] = PADDING[LEFT]
 						Cursor[Y] = Cursor[Y] + 1
 						continue
 					}
@@ -120,42 +132,47 @@ func (s *Screen) Input() {
 				Cursor[Y] = Cursor[Y] + 1
 
 			} else if event.Key() == tcell.KeyEnter {
-				if Cursor[X] == len(FILEDATA[Cursor[Y]-1])+PADDING {
+				// if Cursor[Y] == Dimensions[HEIGHT]-2 {
+				// 	ViewLine[START] += 1
+				// 	s.Screen.Clear()
+				// 	continue
+				// }
+				if Cursor[X] == len(FILEDATA[Cursor[Y]-1])+PADDING[LEFT] {
 					FILEDATA = slices.Insert(FILEDATA, Cursor[Y], "")
 					FILEDATA[Cursor[Y]] = ""
 					Cursor[Y] += 1
-					Cursor[X] = PADDING
+					Cursor[X] = PADDING[LEFT]
 				} else {
 					var currentLine = FILEDATA[Cursor[Y]-1]
-					FILEDATA = slices.Insert(FILEDATA, Cursor[Y], currentLine[Cursor[X]-PADDING:])
-					FILEDATA[Cursor[Y]-1] = currentLine[0 : Cursor[X]-PADDING]
+					FILEDATA = slices.Insert(FILEDATA, Cursor[Y], currentLine[Cursor[X]-PADDING[LEFT]:])
+					FILEDATA[Cursor[Y]-1] = currentLine[0 : Cursor[X]-PADDING[LEFT]]
 					Cursor[Y] += 1
-					Cursor[X] = PADDING
+					Cursor[X] = PADDING[LEFT]
 				}
 				s.Screen.Clear()
 			} else if event.Key() == tcell.KeyBackspace {
-				if Cursor[X] == PADDING {
+				if Cursor[X] == PADDING[LEFT] {
 					if Cursor[Y] == 1 {
 						continue
 					}
 					var lastData = FILEDATA[Cursor[Y]-1]
 					FILEDATA = slices.Delete(FILEDATA, Cursor[Y]-1, Cursor[Y])
 					if Cursor[Y]-2 >= 0 {
-						Cursor[X] = len(FILEDATA[Cursor[Y]-2]) + PADDING
+						Cursor[X] = len(FILEDATA[Cursor[Y]-2]) + PADDING[LEFT]
 						FILEDATA[Cursor[Y]-2] += lastData
 					}
 					Cursor[Y] -= 1
 				} else {
 					var currentLineData = FILEDATA[Cursor[Y]-1]
-					FILEDATA[Cursor[Y]-1] = currentLineData[:Cursor[X]-PADDING-1] + currentLineData[Cursor[X]-PADDING:]
-					if Cursor[X] > PADDING {
+					FILEDATA[Cursor[Y]-1] = currentLineData[:Cursor[X]-PADDING[LEFT]-1] + currentLineData[Cursor[X]-PADDING[LEFT]:]
+					if Cursor[X] > PADDING[LEFT] {
 						Cursor[X] -= 1
 					}
 				}
 				s.Screen.Clear()
 			} else {
 				var currentLineData = FILEDATA[Cursor[Y]-1]
-				FILEDATA[Cursor[Y]-1] = currentLineData[:Cursor[X]-PADDING] + string(event.Rune()) + currentLineData[Cursor[X]-PADDING:]
+				FILEDATA[Cursor[Y]-1] = currentLineData[:Cursor[X]-PADDING[LEFT]] + string(event.Rune()) + currentLineData[Cursor[X]-PADDING[LEFT]:]
 				Cursor[X] += 1
 			}
 		}
@@ -173,9 +190,9 @@ func (s *Screen) RenderFileName() {
 }
 
 func (s *Screen) RenderFileData() {
-	for y := 0; y < Dimensions[HEIGHT]-2; y++ {
-		if y < len(FILEDATA) {
-			var lineRune = []rune(fmt.Sprintf("%02d", y+1) + " " + FILEDATA[y])
+	for y, fileLine := 0, ViewLine[START]; y < Dimensions[HEIGHT]-PADDING[BOTTOM]; y, fileLine = y+1, fileLine+1 {
+		if fileLine < len(FILEDATA) {
+			var lineRune = []rune(fmt.Sprintf("%02d", fileLine+1) + " " + FILEDATA[fileLine])
 			for x := 0; x < Dimensions[WIDTH]; x++ {
 				if x < len(lineRune) {
 					s.Screen.SetContent(x, y+1, lineRune[x], nil, tcell.StyleDefault)
@@ -198,4 +215,10 @@ func (s *Screen) SetFileData(filedata *[]string) {
 
 func (s *Screen) Size() {
 	Dimensions[WIDTH], Dimensions[HEIGHT] = s.Screen.Size()
+}
+
+func (s *Screen) RenderCommandBox() {
+	for x := 0; x < Dimensions[WIDTH]; x++ {
+		s.Screen.SetContent(x, Dimensions[HEIGHT]-PADDING[BOTTOM], tcell.RuneHLine, nil, tcell.StyleDefault)
+	}
 }
