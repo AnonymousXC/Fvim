@@ -2,7 +2,6 @@ package screen
 
 import (
 	"fmt"
-	"slices"
 
 	"github.com/gdamore/tcell/v2"
 )
@@ -14,36 +13,44 @@ type Screen struct {
 }
 
 const (
-	X      string = "x"
-	Y      string = "y"
-	WIDTH  string = "width"
-	HEIGHT string = "height"
-	START  string = "start"
-	END    string = "end"
-	LEFT   string = "left"
-	BOTTOM string = "bottom"
-	TOP    string = "top"
+	X           string = "x"
+	Y           string = "y"
+	WIDTH       string = "width"
+	HEIGHT      string = "height"
+	START       string = "start"
+	END         string = "end"
+	LEFT        string = "left"
+	BOTTOM      string = "bottom"
+	TOP         string = "top"
+	MODE_NORMAL string = "NORMAL"
+	MODE_INSERT string = "INSERT"
+	MODE_CMD    string = "COMMAND_LINE"
 )
 
-var FILENAME []rune
-var FILEDATA []string
-var PADDING = map[string]int{
-	LEFT:   3,
-	BOTTOM: 2,
-	TOP:    2,
-}
-var Cursor = map[string]int{
-	X: PADDING[LEFT],
-	Y: 1,
-}
-var Dimensions = map[string]int{
-	WIDTH:  0,
-	HEIGHT: 0,
-}
-var ViewLine = map[string]int{
-	START: 0,
-	END:   Dimensions[HEIGHT] - 2,
-}
+var (
+	FILENAME    []rune
+	FILEDATA    []string
+	MODE        = MODE_NORMAL
+	COMMAND     = ""
+	CMD_MESSAGE = ""
+	PADDING     = map[string]int{
+		LEFT:   3,
+		BOTTOM: 2,
+		TOP:    2,
+	}
+	Cursor = map[string]int{
+		X: PADDING[LEFT],
+		Y: 1,
+	}
+	Dimensions = map[string]int{
+		WIDTH:  0,
+		HEIGHT: 0,
+	}
+	ViewLine = map[string]int{
+		START: 0,
+		END:   Dimensions[HEIGHT] - 2,
+	}
+)
 
 func CreateScreen() (*Screen, error) {
 
@@ -65,127 +72,15 @@ func (s *Screen) Close() {
 	s.Screen.Fini()
 }
 
-func (s *Screen) Input() {
-
-	for {
-
-		s.RenderFileName()
-		s.RenderCursor()
-		s.RenderFileData()
-		s.RenderCommandBox()
-		s.Screen.Show()
-		var event = s.Screen.PollEvent()
-
-		switch event := event.(type) {
-
-		case *tcell.EventKey:
-
-			if event.Key() == tcell.KeyEscape || event.Key() == tcell.KeyCtrlC {
-				return
-			} else if event.Key() == tcell.KeyLeft {
-
-				if Cursor[X] <= PADDING[LEFT] && Cursor[Y] > PADDING[TOP] {
-					Cursor[Y] -= 1
-					if len(FILEDATA[Cursor[Y]-1]) == 0 {
-						Cursor[X] = PADDING[LEFT]
-					} else {
-						Cursor[X] = len(FILEDATA[Cursor[Y]-1]) + PADDING[LEFT] + 1
-					}
-				}
-				if Cursor[X] > PADDING[LEFT] {
-					Cursor[X] = Cursor[X] - 1
-				}
-
-			} else if event.Key() == tcell.KeyRight {
-
-				if Cursor[X] >= len(FILEDATA[Cursor[Y]-1])+PADDING[LEFT] {
-					if Cursor[Y] >= len(FILEDATA) {
-						continue
-					}
-					Cursor[Y] += 1
-					Cursor[X] = PADDING[LEFT]
-					continue
-				}
-				Cursor[X] = Cursor[X] + 1
-
-			} else if event.Key() == tcell.KeyUp && Cursor[Y] > 1 {
-
-				Cursor[Y] = Cursor[Y] - 1
-				if Cursor[X] > len(FILEDATA[Cursor[Y]-1]) {
-					Cursor[X] = len(FILEDATA[Cursor[Y]-1]) + PADDING[LEFT]
-				}
-
-			} else if event.Key() == tcell.KeyDown {
-
-				if Cursor[Y] >= len(FILEDATA) {
-					continue
-				}
-
-				if Cursor[X] >= len(FILEDATA[Cursor[Y]])+1 {
-					if len(FILEDATA[Cursor[Y]]) == 0 {
-						Cursor[X] = PADDING[LEFT]
-						Cursor[Y] = Cursor[Y] + 1
-						continue
-					}
-					Cursor[X] = len(FILEDATA[Cursor[Y]]) + 1
-				}
-				Cursor[Y] = Cursor[Y] + 1
-
-			} else if event.Key() == tcell.KeyEnter {
-				// if Cursor[Y] == Dimensions[HEIGHT]-2 {
-				// 	ViewLine[START] += 1
-				// 	s.Screen.Clear()
-				// 	continue
-				// }
-				if Cursor[X] == len(FILEDATA[Cursor[Y]-1])+PADDING[LEFT] {
-					FILEDATA = slices.Insert(FILEDATA, Cursor[Y], "")
-					FILEDATA[Cursor[Y]] = ""
-					Cursor[Y] += 1
-					Cursor[X] = PADDING[LEFT]
-				} else {
-					var currentLine = FILEDATA[Cursor[Y]-1]
-					FILEDATA = slices.Insert(FILEDATA, Cursor[Y], currentLine[Cursor[X]-PADDING[LEFT]:])
-					FILEDATA[Cursor[Y]-1] = currentLine[0 : Cursor[X]-PADDING[LEFT]]
-					Cursor[Y] += 1
-					Cursor[X] = PADDING[LEFT]
-				}
-				s.Screen.Clear()
-			} else if event.Key() == tcell.KeyBackspace {
-				if Cursor[X] == PADDING[LEFT] {
-					if Cursor[Y] == 1 {
-						continue
-					}
-					var lastData = FILEDATA[Cursor[Y]-1]
-					FILEDATA = slices.Delete(FILEDATA, Cursor[Y]-1, Cursor[Y])
-					if Cursor[Y]-2 >= 0 {
-						Cursor[X] = len(FILEDATA[Cursor[Y]-2]) + PADDING[LEFT]
-						FILEDATA[Cursor[Y]-2] += lastData
-					}
-					Cursor[Y] -= 1
-				} else {
-					var currentLineData = FILEDATA[Cursor[Y]-1]
-					FILEDATA[Cursor[Y]-1] = currentLineData[:Cursor[X]-PADDING[LEFT]-1] + currentLineData[Cursor[X]-PADDING[LEFT]:]
-					if Cursor[X] > PADDING[LEFT] {
-						Cursor[X] -= 1
-					}
-				}
-				s.Screen.Clear()
-			} else {
-				var currentLineData = FILEDATA[Cursor[Y]-1]
-				FILEDATA[Cursor[Y]-1] = currentLineData[:Cursor[X]-PADDING[LEFT]] + string(event.Rune()) + currentLineData[Cursor[X]-PADDING[LEFT]:]
-				Cursor[X] += 1
-			}
-		}
-	}
-}
-
 func (s *Screen) RenderCursor() {
-	s.Screen.ShowCursor(Cursor[X], Cursor[Y])
+	if MODE == MODE_INSERT {
+		s.Screen.ShowCursor(Cursor[X], Cursor[Y])
+	}
 }
 
 func (s *Screen) RenderFileName() {
 	for i := 0; i < len(FILENAME); i++ {
-		s.Screen.SetContent(i, 0, FILENAME[i], nil, tcell.StyleDefault)
+		s.Screen.SetContent(i, 0, FILENAME[i], nil, tcell.StyleDefault.Foreground(tcell.ColorRed))
 	}
 }
 
@@ -219,6 +114,34 @@ func (s *Screen) Size() {
 
 func (s *Screen) RenderCommandBox() {
 	for x := 0; x < Dimensions[WIDTH]; x++ {
-		s.Screen.SetContent(x, Dimensions[HEIGHT]-PADDING[BOTTOM], tcell.RuneHLine, nil, tcell.StyleDefault)
+		s.Screen.SetContent(x, Dimensions[HEIGHT]-PADDING[BOTTOM], tcell.RuneHLine, nil, tcell.StyleDefault.Foreground(tcell.ColorTeal))
+	}
+}
+
+func (s *Screen) SetMode(mode string) {
+	MODE = mode
+	s.Screen.Clear()
+}
+
+func (s *Screen) RenderCommandText(cmd string, style tcell.Style) {
+	var cmdRund = []rune(cmd)
+	for x := 0; x < len(cmdRund); x++ {
+		s.Screen.SetContent(x, Dimensions[HEIGHT]-PADDING[BOTTOM]+1, cmdRund[x], nil, style)
+	}
+}
+
+func (s *Screen) RenderCommand() {
+	s.RenderCommandBox()
+	if MODE == MODE_INSERT {
+		s.RenderCommandText("press esc to exit insert mode", tcell.StyleDefault.Foreground(tcell.ColorTeal))
+	}
+	if MODE == MODE_NORMAL {
+		if COMMAND == "" && CMD_MESSAGE == "" {
+			s.RenderCommandText("press i to enter insert mode", tcell.StyleDefault.Foreground(tcell.ColorTeal))
+		} else if COMMAND != "" {
+			s.RenderCommandText(COMMAND, tcell.StyleDefault.Foreground(tcell.ColorTeal))
+		} else {
+			s.RenderCommandText(CMD_MESSAGE, tcell.StyleDefault.Foreground(tcell.ColorRed))
+		}
 	}
 }

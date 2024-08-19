@@ -7,7 +7,10 @@ import (
 	"os"
 )
 
+var FILE_PATH *string
+
 func ReadFile(filePath *string, FILE_DATA *[]string) {
+	FILE_PATH = filePath
 	var file, openError = os.Open(*filePath)
 	defer file.Close()
 	if openError != nil {
@@ -32,4 +35,19 @@ func ReadFile(filePath *string, FILE_DATA *[]string) {
 	for scanner.Scan() {
 		*FILE_DATA = append(*FILE_DATA, scanner.Text())
 	}
+}
+
+func WriteFile(FILE_DATA *[]string, COMMAND_MESSAGE *string) {
+	var file = *FILE_DATA
+	var fileString = ""
+	for i := 0; i < len(file); i++ {
+		fileString += file[i] + "\n"
+	}
+	var err = os.WriteFile(*FILE_PATH, []byte(fileString), os.ModeAppend)
+	if err != nil {
+		*COMMAND_MESSAGE = "error saving file"
+	} else {
+		*COMMAND_MESSAGE = "file saved succesfully"
+	}
+
 }

@@ -8,7 +8,7 @@ import (
 type Editor struct {
 	MODE     string
 	filePath string
-	data     []string
+	data     *[]string
 }
 
 const (
@@ -19,7 +19,7 @@ const (
 
 func EditorInit(filepath *string, data *[]string) {
 
-	var editor = Editor{filePath: *filepath, MODE: MODE_NORMAL, data: *data}
+	var editor = Editor{filePath: *filepath, MODE: MODE_NORMAL, data: data}
 	var currentScreen, screenError = screen.CreateScreen()
 	defer currentScreen.Close()
 
