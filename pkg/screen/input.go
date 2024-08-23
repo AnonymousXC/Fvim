@@ -61,12 +61,16 @@ func (s *Screen) Input() {
 
 			if event.Key() == tcell.KeyLeft {
 
-				if Cursor[X] <= PADDING[LEFT] && Cursor[Y] > PADDING[TOP] {
+				if ViewLine[START] > 0 && Cursor[Y] == 1 {
+					ViewLine[START] -= 1
+					s.Screen.Clear()
+				}
+				if Cursor[X] <= PADDING[LEFT] && Cursor[Y] >= PADDING[TOP] {
 					Cursor[Y] -= 1
-					if len(FILEDATA[Cursor[Y]-1]) == 0 {
+					if len(FILEDATA[Cursor[Y]-1+ViewLine[START]]) == 0 {
 						Cursor[X] = PADDING[LEFT]
 					} else {
-						Cursor[X] = len(FILEDATA[Cursor[Y]-1]) + PADDING[LEFT] + 1
+						Cursor[X] = len(FILEDATA[Cursor[Y]-1+ViewLine[START]]) + PADDING[LEFT] + 1
 					}
 				}
 				if Cursor[X] > PADDING[LEFT] {
@@ -76,7 +80,12 @@ func (s *Screen) Input() {
 			} else if event.Key() == tcell.KeyRight {
 
 				if Cursor[X] >= len(FILEDATA[Cursor[Y]-1+ViewLine[START]])+PADDING[LEFT] {
-					if Cursor[Y] >= len(FILEDATA) {
+					if Cursor[Y] == Dimensions[HEIGHT]-3 {
+						ViewLine[START] += 1
+						Cursor[Y] -= 1
+						s.Screen.Clear()
+					}
+					if Cursor[Y]+ViewLine[START] == len(FILEDATA) {
 						continue
 					}
 					Cursor[Y] += 1
