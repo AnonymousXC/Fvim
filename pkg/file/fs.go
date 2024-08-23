@@ -11,12 +11,12 @@ var FILE_PATH *string
 
 func ReadFile(filePath *string, FILE_DATA *[]string) {
 	FILE_PATH = filePath
-	var file, openError = os.Open(*filePath)
+	var file, openError = os.Open(*FILE_PATH)
 	defer file.Close()
 	if openError != nil {
 		if errors.Is(openError, os.ErrNotExist) {
 
-			var _, err = os.Create(*filePath)
+			var _, err = os.Create(*FILE_PATH)
 			if err != nil {
 				fmt.Printf("\033[31m %v \033[0m \n", err)
 				os.Exit(1)

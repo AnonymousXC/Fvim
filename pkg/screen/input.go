@@ -1,7 +1,6 @@
 package screen
 
 import (
-	"fvim/pkg/file"
 	"slices"
 
 	"github.com/gdamore/tcell/v2"
@@ -34,15 +33,18 @@ func (s *Screen) Input() {
 						COMMAND = COMMAND[0 : len(COMMAND)-1]
 					}
 				} else if event.Key() == tcell.KeyEnter {
-					if COMMAND == ":q" {
+					if COMMAND == ":q!" {
 						return
-					} else if COMMAND == ":w" {
-						COMMAND = ""
-						CMD_MESSAGE = "saving..."
-						file.WriteFile(&FILEDATA, &CMD_MESSAGE)
+					} else if COMMAND == ":q" {
+						// if checkBeforeExit() {
+						// 	return
+						// } else {
+						// 	COMMAND = ""
+						// 	CMD_MESSAGE = "file has unsaved changes use ! to quit."
+						// }
+						return
 					} else {
-						COMMAND = ""
-						CMD_MESSAGE = "command not found"
+						HandleCommand()
 					}
 				} else {
 					COMMAND += string(event.Rune())
