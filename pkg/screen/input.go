@@ -36,13 +36,12 @@ func (s *Screen) Input() {
 					if COMMAND == ":q!" {
 						return
 					} else if COMMAND == ":q" {
-						// if checkBeforeExit() {
-						// 	return
-						// } else {
-						// 	COMMAND = ""
-						// 	CMD_MESSAGE = "file has unsaved changes use ! to quit."
-						// }
-						return
+						if checkBeforeExit() {
+							return
+						} else {
+							COMMAND = ""
+							CMD_MESSAGE = "file has unsaved changes use ! to quit."
+						}
 					} else {
 						HandleCommand()
 					}

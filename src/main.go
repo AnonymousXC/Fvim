@@ -9,6 +9,7 @@ import (
 
 var FILE_PATH string
 var FILE_DATA []string
+var FOLDER_DATA []string
 
 func main() {
 

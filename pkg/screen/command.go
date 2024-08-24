@@ -2,6 +2,8 @@ package screen
 
 import (
 	"fvim/pkg/file"
+	"reflect"
+	"strings"
 )
 
 func HandleCommand() {
@@ -15,18 +17,19 @@ func HandleCommand() {
 	}
 }
 
-// func checkBeforeExit() bool {
-// 	var filepath string
-// 	var filedata []string
-// 	for i := 0; i < len(FILENAME); i++ {
-// 		filepath += string(FILENAME[i])
-// 	}
-// 	file.ReadFile(&filepath, &filedata)
-// 	if reflect.DeepEqual(filedata, FILEDATA) == true {
-// 		return true
-// 	} else {
-// 		filedata = nil
-// 		filepath = ""
-// 		return false
-// 	}
-// }
+func checkBeforeExit() bool {
+	var filepath string
+	var filedata []string
+	for i := 0; i < len(FILENAME); i++ {
+		filepath += string(FILENAME[i])
+	}
+	filepath = strings.Replace(filepath, "Editing ", "", -1)
+	file.ReadFile(&filepath, &filedata)
+	if reflect.DeepEqual(filedata, FILEDATA) {
+		return true
+	} else {
+		filedata = nil
+		filepath = ""
+		return false
+	}
+}

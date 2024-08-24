@@ -33,6 +33,7 @@ var (
 	MODE        = MODE_NORMAL
 	COMMAND     = ""
 	CMD_MESSAGE = ""
+	LINE_NO_WID = 3
 	PADDING     = map[string]int{
 		LEFT:   3,
 		BOTTOM: 2,
@@ -90,7 +91,7 @@ func (s *Screen) RenderFileData() {
 			var lineRune = []rune(fmt.Sprintf("%02d", fileLine+1) + " " + FILEDATA[fileLine])
 			for x := 0; x < Dimensions[WIDTH]; x++ {
 				if x < len(lineRune) {
-					s.Screen.SetContent(x, y+1, lineRune[x], nil, tcell.StyleDefault)
+					s.Screen.SetContent(x+PADDING[LEFT]-LINE_NO_WID, y+1, lineRune[x], nil, tcell.StyleDefault)
 				}
 			}
 		} else {
@@ -142,6 +143,24 @@ func (s *Screen) RenderCommand() {
 			s.RenderCommandText(COMMAND, tcell.StyleDefault.Foreground(tcell.ColorTeal))
 		} else {
 			s.RenderCommandText(CMD_MESSAGE, tcell.StyleDefault.Foreground(tcell.ColorRed))
+		}
+	}
+}
+
+func (s *Screen) RenderFileBox() {
+	var MINUS_LEFT_PADDING = 2
+	for x := 0; x < PADDING[LEFT]; x++ {
+		for y := 1; y < Dimensions[HEIGHT]; y++ {
+			if (x == 0 || x == PADDING[LEFT]-LINE_NO_WID-MINUS_LEFT_PADDING) && y < Dimensions[HEIGHT]-PADDING[BOTTOM] {
+				s.Screen.SetContent(x, y, tcell.RuneVLine, nil, tcell.StyleDefault)
+			}
+			if (y == 1 || y == Dimensions[HEIGHT]-PADDING[BOTTOM]-1) && x < PADDING[LEFT]-LINE_NO_WID-1 {
+				s.Screen.SetContent(x, y, tcell.RuneHLine, nil, tcell.StyleDefault)
+			}
+			s.Screen.SetContent(0, 1, tcell.RuneULCorner, nil, tcell.StyleDefault)
+			s.Screen.SetContent(PADDING[LEFT]-LINE_NO_WID-MINUS_LEFT_PADDING, 1, tcell.RuneURCorner, nil, tcell.StyleDefault)
+			s.Screen.SetContent(PADDING[LEFT]-LINE_NO_WID-MINUS_LEFT_PADDING, Dimensions[HEIGHT]-PADDING[BOTTOM]-1, tcell.RuneLRCorner, nil, tcell.StyleDefault)
+			s.Screen.SetContent(0, Dimensions[HEIGHT]-PADDING[BOTTOM]-1, tcell.RuneLLCorner, nil, tcell.StyleDefault)
 		}
 	}
 }

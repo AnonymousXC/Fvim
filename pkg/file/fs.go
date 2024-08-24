@@ -45,7 +45,7 @@ func WriteFile(FILE_DATA *[]string, COMMAND_MESSAGE *string) {
 	}
 	var err = os.WriteFile(*FILE_PATH, []byte(fileString), os.ModeAppend)
 	if err != nil {
-		*COMMAND_MESSAGE = "error saving file"
+		*COMMAND_MESSAGE = "error saving file" + err.Error()
 	} else {
 		*COMMAND_MESSAGE = "file saved succesfully"
 	}
